@@ -26,4 +26,5 @@ export const actions = {
   toggleSkipAnimations: () => gameStore.getState().toggleSkipAnimations(),
   setAnimationSpeed: (...args: Parameters<GameStore['setAnimationSpeed']>) =>
     gameStore.getState().setAnimationSpeed(...args),
+  toggleAutoFlip: () => gameStore.getState().toggleAutoFlip(),
 };

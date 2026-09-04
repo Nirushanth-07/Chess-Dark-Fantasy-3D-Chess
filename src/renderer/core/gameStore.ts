@@ -83,6 +83,7 @@ export interface GameActions {
   resign(): void;
   toggleSkipAnimations(): void;
   setAnimationSpeed(speed: number): void;
+  toggleAutoFlip(): void;
 }
 
 export type GameStore = GameSnapshot & GameActions;
@@ -242,6 +243,10 @@ export const gameStore = createStore<GameStore>((set, get) => ({
 
   setAnimationSpeed(speed) {
     set((state) => ({ config: { ...state.config, animationSpeed: speed } }));
+  },
+
+  toggleAutoFlip() {
+    set((state) => ({ config: { ...state.config, autoFlipBoard: !state.config.autoFlipBoard } }));
   },
 }));
 

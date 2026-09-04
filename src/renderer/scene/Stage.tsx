@@ -95,30 +95,88 @@ export function Lights({ theme }: { theme: ThemeId }) {
 }
 
 interface CameraRigProps {
-  humanColor: Color;
-  /** Bumping this re-frames the camera to the player's side. */
+  /** Which side of the board the camera sits behind. */
+  viewColor: Color;
+  /** Bumping this snaps the camera home instead of swinging to it. */
   gameId: number;
 }
 
-export function CameraRig({ humanColor, gameId }: CameraRigProps) {
+/** Azimuth (Spherical theta) that puts the camera behind a colour's back rank. */
+function azimuthFor(color: Color): number {
+  // squareToWorld puts white's home rank at +Z, so white views from theta 0.
+  return color === 'w' ? 0 : Math.PI;
+}
+
+const FLIP_SPEED = 2.6; // radians per second
+
+export function CameraRig({ viewColor, gameId }: CameraRigProps) {
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera } = useThree();
   const shakeOffset = useMemo(() => new THREE.Vector3(), []);
+  const spherical = useMemo(() => new THREE.Spherical(), []);
+  const offset = useMemo(() => new THREE.Vector3(), []);
+  const dragging = useRef(false);
+  const firstFrame = useRef(true);
 
-  // Frame the board from behind the human's back rank.
+  // A new game snaps to the starting side rather than swinging to it.
   useEffect(() => {
-    const z = humanColor === 'w' ? 8.2 : -8.2;
-    camera.position.set(0, 7.4, z);
+    const azimuth = azimuthFor(viewColor);
+    camera.position.set(Math.sin(azimuth) * 8.2, 7.4, Math.cos(azimuth) * 8.2);
     camera.lookAt(0, 0, 0);
     controls.current?.target.set(0, 0, 0);
     controls.current?.update();
-  }, [camera, humanColor, gameId]);
+    firstFrame.current = true;
+    // Only on a new game — a turn change animates instead.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [camera, gameId]);
+
+  // While the player is dragging, the camera is theirs; the flip waits.
+  useEffect(() => {
+    const node = controls.current;
+    if (!node) return;
+    const onStart = () => (dragging.current = true);
+    const onEnd = () => (dragging.current = false);
+    node.addEventListener('start', onStart);
+    node.addEventListener('end', onEnd);
+    return () => {
+      node.removeEventListener('start', onStart);
+      node.removeEventListener('end', onEnd);
+    };
+  }, []);
 
   useFrame((_, delta) => {
-    const strength = consumeShake(delta);
-    // Undo last frame's offset before applying this frame's, so shake never
-    // accumulates into a drifting camera.
+    // Shake is applied last each frame, so remove the previous one before
+    // anything else moves the camera. Otherwise it accumulates into a drift.
     camera.position.sub(shakeOffset);
+
+    // -- board flip --------------------------------------------------------
+    const target = controls.current?.target ?? new THREE.Vector3();
+    offset.copy(camera.position).sub(target);
+    spherical.setFromVector3(offset);
+
+    const desired = azimuthFor(viewColor);
+    let difference = (desired - spherical.theta) % (Math.PI * 2);
+    if (difference > Math.PI) difference -= Math.PI * 2;
+    if (difference < -Math.PI) difference += Math.PI * 2;
+
+    if (!dragging.current && Math.abs(difference) > 0.002) {
+      if (firstFrame.current) {
+        // Coming out of a new game — no swing.
+        spherical.theta = desired;
+      } else {
+        const step = Math.sign(difference) * Math.min(Math.abs(difference), FLIP_SPEED * delta);
+        // Ease out as it arrives so the swing settles instead of stopping dead.
+        spherical.theta += step * (0.35 + 0.65 * Math.min(1, Math.abs(difference)));
+      }
+      // Only the azimuth is driven; the player keeps their own zoom and pitch.
+      offset.setFromSpherical(spherical);
+      camera.position.copy(target).add(offset);
+      controls.current?.update();
+    }
+    firstFrame.current = false;
+
+    // -- impact shake ------------------------------------------------------
+    const strength = consumeShake(delta);
     if (strength > 0.001) {
       shakeOffset.set(
         (Math.random() - 0.5) * strength * 0.22,

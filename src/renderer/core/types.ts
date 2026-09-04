@@ -89,6 +89,11 @@ export interface GameConfig {
   humanColor: Color;
   animationSpeed: number; // 1 = normal, 2 = double speed
   skipAnimations: boolean;
+  /**
+   * Hotseat only: swing the camera round to the side of whoever is to move, so
+   * both players always look at the board from behind their own back rank.
+   */
+  autoFlipBoard: boolean;
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
@@ -98,6 +103,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   humanColor: 'w',
   animationSpeed: 1,
   skipAnimations: false,
+  autoFlipBoard: true,
 };
 
 // ---------------------------------------------------------------------------

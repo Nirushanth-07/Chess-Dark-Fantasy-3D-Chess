@@ -73,6 +73,20 @@ export function Menu() {
           />
         </div>
 
+        {config.mode === 'human-vs-human' && (
+          <div className="field">
+            <label className="field-label">Board</label>
+            <Options<'on' | 'off'>
+              value={config.autoFlipBoard ? 'on' : 'off'}
+              onChange={(value) => actions.setConfig({ autoFlipBoard: value === 'on' })}
+              options={[
+                { value: 'on', label: 'Auto-flip', hint: 'faces each player in turn' },
+                { value: 'off', label: 'Fixed', hint: "always white's view" },
+              ]}
+            />
+          </div>
+        )}
+
         {config.mode === 'human-vs-computer' && (
           <>
             <div className="field">

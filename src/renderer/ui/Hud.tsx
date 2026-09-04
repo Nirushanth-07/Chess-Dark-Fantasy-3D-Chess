@@ -22,6 +22,7 @@ function TopBar() {
   const speed = useGame((s) => s.config.animationSpeed);
   const mode = useGame((s) => s.config.mode);
   const humanColor = useGame((s) => s.config.humanColor);
+  const autoFlip = useGame((s) => s.config.autoFlipBoard);
 
   const label = useMemo(() => {
     if (phase === 'over') return 'Game over';
@@ -40,6 +41,16 @@ function TopBar() {
       </div>
 
       <div className="hud-buttons">
+        {mode === 'human-vs-human' && (
+          <button
+            className="hud-button"
+            data-active={autoFlip}
+            onClick={actions.toggleAutoFlip}
+            title="Swing the board round to whoever is to move"
+          >
+            {autoFlip ? 'Auto-flip on' : 'Auto-flip off'}
+          </button>
+        )}
         <button
           className="hud-button"
           data-active={skip}
