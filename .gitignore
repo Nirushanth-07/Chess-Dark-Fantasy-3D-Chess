@@ -1,0 +1,16 @@
+node_modules/
+out/
+dist/
+release/
+*.log
+.DS_Store
+Thumbs.db
+.vite/
+.eslintcache
+
+# Art sources are large binaries — keep them out of git history and use
+# dedicated asset storage (or Git LFS) instead. See doc/PROJECT_PLAN.md §3.3.
+art/**/*.blend
+art/**/*.blend1
+art/**/*.psd
+art/**/*.spp
