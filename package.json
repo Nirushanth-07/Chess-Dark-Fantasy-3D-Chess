@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Dark fantasy 3D chess for desktop",
   "main": "out/main/index.js",
-  "author": "invis",
+  "author": "Nirushanth-07",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {

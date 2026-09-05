@@ -8,6 +8,20 @@ Thumbs.db
 .vite/
 .eslintcache
 
+# Concept art is the property of its author and is not redistributed here.
+# Keep the sheets locally for reference; they must not re-enter the repo.
+characters/
+
+# Code-signing certificates and environment secrets. Nothing here yet, but a
+# leaked .pfx at packaging time is not recoverable.
+*.pfx
+*.p12
+*.pem
+*.key
+*.cer
+.env
+.env.*
+
 # Art sources are large binaries — keep them out of git history and use
 # dedicated asset storage (or Git LFS) instead. See doc/PROJECT_PLAN.md §3.3.
 art/**/*.blend
