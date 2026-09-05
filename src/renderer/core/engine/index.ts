@@ -1,7 +1,7 @@
 /**
  * Engine facade. The rest of the app talks to `ChessEngine` and never to a
  * concrete implementation, so swapping the built-in search for Stockfish WASM
- * later is a one-file change (see doc/PROJECT_PLAN.md §3.1).
+ * later is a one-file change.
  */
 
 import type { Difficulty, MoveIntent } from '../types';

@@ -75,7 +75,7 @@ describe('search', () => {
     const board = new Chess(fen);
     expect(() => board.move(result.move!)).not.toThrow();
 
-    // PROJECT_PLAN §9 Phase 3 exit criterion: a move in under two seconds.
+    // Target: a move in under two seconds at every difficulty.
     // Iterative deepening is what makes this a guarantee rather than a hope:
     // an unfinished deeper pass is discarded in favour of the last complete one.
     expect(elapsed).toBeLessThan(2000);

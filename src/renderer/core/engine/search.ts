@@ -4,7 +4,7 @@
  * Pure and synchronous — the worker in `searchWorker.ts` is a thin shell around
  * this so the search itself stays unit-testable in Node.
  *
- * See doc/PROJECT_PLAN.md §3.1 for the note on swapping this for Stockfish WASM.
+ * Kept behind the `ChessEngine` interface so Stockfish WASM can replace it.
  */
 
 import { Chess, type Move as ChessJsMove } from 'chess.js';

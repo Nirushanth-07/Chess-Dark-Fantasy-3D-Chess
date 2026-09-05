@@ -27,11 +27,14 @@ Built with Electron, TypeScript, React and three.js. Plays hotseat or against a 
 Requires **Node 20+** on Windows, macOS or Linux.
 
 ```bash
-git clone <your-repo-url>
-cd Chess
-npm install
+git clone https://github.com/Nirushanth-07/Chess-Dark-Fantasy-3D-Chess.git
+cd Chess-Dark-Fantasy-3D-Chess
+npm ci
 npm run dev
 ```
+
+That is the whole setup. There are no art or audio assets to download — every
+3D object is generated in code and every sound is synthesised at runtime.
 
 To produce a Windows installer:
 
@@ -92,7 +95,7 @@ src/
    ├─ ui/                    React menus and HUD
    └─ audio/                 Web Audio synthesis
 tests/                       vitest — rules and engine
-doc/PROJECT_PLAN.md          full plan, rationale and progress log
+doc/screenshots/             images used by this README
 ```
 
 ### Two details worth calling out
@@ -149,7 +152,7 @@ and camera position across board flips.
 
 ## Status
 
-Playable end to end. See [doc/PROJECT_PLAN.md](doc/PROJECT_PLAN.md) for the full plan and progress log.
+Playable end to end — both themes, both modes, AI, audio and UI are complete.
 
 Three things are deliberate placeholders, each behind a seam that makes swapping them a contained change:
 

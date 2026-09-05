@@ -13,7 +13,7 @@ export function App() {
 
   useEffect(() => {
     // The engine lives for the life of the app; the store only ever sees the
-    // `ChessEngine` interface (PROJECT_PLAN §3.1).
+    // `ChessEngine` interface.
     gameStore.getState().attachEngine(getEngine());
     return initAudio();
   }, []);

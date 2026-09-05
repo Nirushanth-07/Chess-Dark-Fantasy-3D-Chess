@@ -6,7 +6,7 @@
  *
  * When the sculpted GLB models land in Phase 5 these are replaced by
  * `AnimationMixer` clips. The consumer only ever calls `applyPose`, so nothing
- * above this file changes when that swap happens (PROJECT_PLAN §5).
+ * above this file changes when that swap happens.
  */
 
 import type { PieceType } from '../../core/types';
@@ -14,7 +14,7 @@ import type { RigJoints } from '../geometry/character';
 
 export type PoseName = 'idle' | 'walk' | 'attack' | 'death' | 'victory' | 'stagger' | 'seated';
 
-/** Where in a normalised attack (0…1) the weapon connects. PROJECT_PLAN §5 Tier 1. */
+/** Where in a normalised attack (0…1) the weapon connects. */
 export const HIT_FRAME: Record<PieceType, number> = {
   p: 0.42,
   n: 0.46,
@@ -68,7 +68,7 @@ function resetJoints(j: RigJoints): void {
 /**
  * Trailing secondary motion for cape / plume chains, driven by how fast the
  * body is moving. Cheap, stable, and enough at this camera distance — real
- * cloth simulation is explicitly out of scope (PROJECT_PLAN §2.3).
+ * cloth simulation is explicitly out of scope.
  */
 function applyCloth(j: RigJoints, time: number, sway: number): void {
   j.cloth.forEach((segment, index) => {
@@ -266,7 +266,7 @@ function death(j: RigJoints, u: number): void {
   applyCloth(j, u * 3, 0.4 * fall);
 }
 
-/** Sword raised, chest out — the checkmate hero pose (PROJECT_PLAN §6). */
+/** Sword raised, chest out — the checkmate hero pose. */
 function victory(j: RigJoints, time: number): void {
   const settle = ease(clamp01(time / 0.8));
   const breathe = Math.sin(time * 2.0) * 0.5 + 0.5;

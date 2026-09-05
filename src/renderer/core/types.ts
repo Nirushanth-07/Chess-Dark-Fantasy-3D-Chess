@@ -1,7 +1,7 @@
 /**
  * Core domain types.
  *
- * ARCHITECTURE RULE (doc/PROJECT_PLAN.md §4.1):
+ * ARCHITECTURE RULE:
  * Nothing in `core/` may import three.js or React. This layer is pure,
  * synchronous, and fully testable headlessly. The 3D layer *replays* what
  * this layer decides; it never decides anything itself.

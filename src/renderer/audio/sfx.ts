@@ -1,5 +1,5 @@
 /**
- * The game's sound palette. See PROJECT_PLAN §7 for the buckets.
+ * The game's sound palette: movement, combat, UI, stings and an ambient bed.
  *
  * Victory and defeat are given the most attention deliberately — they are the
  * two sounds a player actually remembers.
@@ -92,7 +92,7 @@ export function playPromote(): void {
   noise({ duration: 0.7, frequency: 6000, q: 0.4, gain: 0.08, sweepTo: 2000 });
 }
 
-/** Rising major fanfare. PROJECT_PLAN §7. */
+/** Rising major fanfare — one of the two sounds a player actually remembers. */
 export function playVictory(): void {
   duckMusic(0.15, 3.2);
   const root = 53; // F3

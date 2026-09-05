@@ -3,7 +3,7 @@
  *
  * Takes ONE `Cinematic` from the queue and plays it out over time by writing
  * into the motion registry. It never touches game state — by the time a
- * cinematic reaches here the move is already committed (PROJECT_PLAN §4.1),
+ * cinematic reaches here the move is already committed,
  * which is exactly why "skip animation" can be a single line: jump to the end.
  */
 
@@ -169,7 +169,7 @@ export class CinematicDirector {
       yaw: headingBetween(start, end),
       endYaw: facingFor(info?.color ?? 'w'),
       duration,
-      // The knight's L-move is a leap, not a walk — PROJECT_PLAN §5.
+      // The knight's L-move is a leap, not a walk.
       arc: type === 'n',
     };
   }
@@ -424,7 +424,7 @@ export class CinematicDirector {
           victim.poseTime = dying;
         }
         // Dissolve over the tail of the death — the Tier 0 fallback, reused
-        // here so both tiers end the same way (PROJECT_PLAN §5).
+        // here so both tiers end the same way.
         const fadeStart = DEATH_TIME - FADE_TIME;
         const fade = Math.min(1, Math.max(0, (since - fadeStart) / FADE_TIME));
         victim.opacity = 1 - fade;

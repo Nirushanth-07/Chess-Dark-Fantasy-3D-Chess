@@ -4,7 +4,7 @@
  * thinks in objects, and needs to know that the knight now on f3 is the same
  * knight that was on g1.
  *
- * This module is pure. No three.js, no React. See doc/PROJECT_PLAN.md §4.1.
+ * This module is pure. No three.js, no React.
  */
 
 import { Chess, type Move as ChessJsMove } from 'chess.js';
@@ -109,7 +109,7 @@ export class Rules {
   }
 
   /** Material balance in centipawns, positive = white ahead. Drives the
-   *  ambient momentum aura (PROJECT_PLAN §6). */
+   *  ambient momentum aura. */
   materialBalance(): number {
     const value: Record<PieceType, number> = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 0 };
     let score = 0;

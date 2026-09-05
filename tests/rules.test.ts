@@ -1,7 +1,7 @@
 /**
  * Rules-layer tests.
  *
- * The point of PROJECT_PLAN §4.1 is that this file needs no browser, no
+ * The point of keeping core/ pure is that this file needs no browser, no
  * three.js and no React — the entire game model is testable in Node.
  */
 

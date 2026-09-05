@@ -105,7 +105,7 @@ function walkingPieces(): Record<string, { pose: string }> {
 }
 
 /**
- * Ambient momentum aura (PROJECT_PLAN §6): the leading side's king carries a
+ * Ambient momentum aura: the leading side's king carries a
  * faint rim glow that tracks material balance. Subtle by design — the player
  * should feel it rather than notice it.
  */

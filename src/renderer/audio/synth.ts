@@ -66,7 +66,7 @@ export function resumeAudio(): void {
   if (ctx.state === 'suspended') void ctx.resume();
 }
 
-/** Ducks the music under a sting, then restores it. PROJECT_PLAN §7. */
+/** Ducks the music under a sting, then restores it. */
 export function duckMusic(amount = 0.45, holdSeconds = 1.2): void {
   const ctx = audioContext();
   const bus = musicOutput();

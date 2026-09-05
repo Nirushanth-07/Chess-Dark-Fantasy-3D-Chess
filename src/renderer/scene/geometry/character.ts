@@ -4,7 +4,7 @@
  * Built to the silhouettes in `characters/`: closed faceless helms, layered
  * plate, cloaks, and each piece's signature weapon.
  *
- * Design rules, all taken from the concept art (PROJECT_PLAN §2):
+ * Design rules, all taken from the concept art:
  *
  * - **Heroic proportions, not human ones.** Broad shoulders, narrow waist,
  *   oversized helm. A realistically proportioned figure reads as a toy at
@@ -273,7 +273,7 @@ function buildTorso(b: ArmourBuilder, j: RigJoints, rank: number, broad: number)
   // Gorget: the collar the helm sits into.
   b.place(j.chest, rank >= 2 ? 'gold' : 'steel', band(w * 0.6, 0.018, 0.82), [0, 0.208, 0]);
 
-  // Etched breastplate banding for high rank (§2.2, the Queen's sketch).
+  // Etched breastplate banding for high rank — the Queen's sketch.
   if (rank >= 2) {
     b.place(j.chest, 'gold', band(w * 0.94, 0.009, 0.72), [0, 0.075, 0], [0.28, 0, 0]);
     if (rank >= 3) b.place(j.chest, 'gold', band(w * 0.82, 0.008, 0.72), [0, 0.15, 0], [0.35, 0, 0]);
@@ -370,7 +370,7 @@ function buildLegs(b: ArmourBuilder, j: RigJoints, rank: number) {
   }
 }
 
-/** The bishop wears an ankle-length robe in place of visible legs (§2.2). */
+/** The bishop wears an ankle-length robe in place of visible legs. */
 function buildRobe(b: ArmourBuilder, j: RigJoints) {
   b.place(
     j.hips,
@@ -396,7 +396,7 @@ function buildRobe(b: ArmourBuilder, j: RigJoints) {
 }
 
 // ---------------------------------------------------------------------------
-// Helms — the primary identifier at game-camera distance (§2.3)
+// Helms — the primary identifier at game-camera distance
 // ---------------------------------------------------------------------------
 
 function buildHelm(b: ArmourBuilder, j: RigJoints, type: PieceType, rank: number) {
@@ -556,7 +556,7 @@ function buildCloak(b: ArmourBuilder, j: RigJoints, chain: THREE.Group[], type: 
     b.place(j.hips, 'cloth', plate(tabard, 0.012), [0, -0.09, 0.112], [0.06, 0, 0]);
   }
 
-  // The rook wears a fur mantle over the pauldrons (§2.2).
+  // The rook wears a fur mantle over the pauldrons.
   if (type === 'r') {
     for (let i = 0; i < 14; i++) {
       const angle = (i / 14) * Math.PI * 2;

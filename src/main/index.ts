@@ -16,7 +16,7 @@ function createWindow(): void {
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       // The renderer is a pure browser app — it never needs Node. Keeping it
-      // that way also keeps the Tauri migration in PROJECT_PLAN §3.2 cheap.
+      // that way also keeps a future Tauri migration cheap.
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: false,

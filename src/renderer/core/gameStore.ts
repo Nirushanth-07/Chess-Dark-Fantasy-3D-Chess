@@ -2,7 +2,7 @@
  * The game state machine.
  *
  * Uses zustand's *vanilla* store so this file stays free of React and can be
- * driven directly from tests. See doc/PROJECT_PLAN.md §4.1: a move is committed
+ * driven directly from tests. A move is committed
  * to `Rules` the instant it is made; the cinematic queue is only a replay
  * instruction for the 3D layer, and input stays locked until it drains.
  */
