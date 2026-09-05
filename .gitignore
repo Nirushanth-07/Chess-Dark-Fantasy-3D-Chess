@@ -48,7 +48,7 @@ coverage/
 # ---------------------------------------------------------------------------
 # Concept art and art sources.
 #
-# The character sheets are Miguel's work and are not ours to redistribute;
+# The character sheets are third-party work and are not ours to redistribute;
 # keep them locally in characters/ as the design reference. Art sources are
 # large binaries that belong in dedicated asset storage or Git LFS, not in
 # ordinary history.

@@ -4,7 +4,7 @@
   "description": "Dark fantasy 3D chess for desktop",
   "main": "out/main/index.js",
   "author": "Nirushanth-07",
-  "license": "UNLICENSED",
+  "license": "MIT",
   "private": true,
   "scripts": {
     "dev": "electron-vite dev",

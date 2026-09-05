@@ -156,7 +156,7 @@ Playable end to end — both themes, both modes, AI, audio and UI are complete.
 
 Three things are deliberate placeholders, each behind a seam that makes swapping them a contained change:
 
-- **The animated characters are procedural**, not sculpted models. They're built from code to the concept art's silhouettes so the whole animation pipeline could be built and tuned before any modelling work. Replacing them means swapping one function for a glTF loader.
+- **The animated characters are procedural**, not sculpted models. They're built from code to their intended silhouettes so the whole animation pipeline could be built and tuned before any modelling work. Replacing them means swapping one function for a glTF loader.
 - **The AI is a built-in negamax search** (alpha-beta, quiescence, piece-square tables, iterative deepening), not Stockfish — so the game runs with no asset download. `ChessEngine` is the interface to drop Stockfish in behind.
 - **Audio is synthesised**, not sampled. No binary audio assets.
 
@@ -164,16 +164,7 @@ Not yet built: clocks, undo/takeback, saved games, online play.
 
 ---
 
-## Credits
-
-Character concept art by **Miguel** (dated Jan–Feb 2023). Every armoured design in
-the Animated theme — the crenellated rook helm, the bishop's mitre and robe, the
-knight's plume, the king's throne — is derived from those sketches.
-
----
-
 ## License
 
-All rights reserved. This repository is published for viewing; it does not grant a
-licence to reuse the code or the artwork. The concept art is the property of its
-author and is not covered by any licence granted here.
+Released under the [MIT License](LICENSE). Use it, fork it, ship it — just keep
+the copyright notice.
