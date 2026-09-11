@@ -21,7 +21,11 @@ export interface EngineMove {
 }
 
 export interface ChessEngine {
-  bestMove(fen: string, difficulty: Difficulty): Promise<EngineMove>;
+  /**
+   * @param maxTimeMs ceiling on thinking time, set by the chess clock. The
+   *   difficulty's own budget still applies whenever it is the lower of the two.
+   */
+  bestMove(fen: string, difficulty: Difficulty, maxTimeMs?: number): Promise<EngineMove>;
   /** Quick shallow read used for the eval bar and the momentum aura. */
   evaluate(fen: string): Promise<number>;
   dispose(): void;
@@ -59,10 +63,10 @@ export class LocalEngine implements ChessEngine {
     });
   }
 
-  bestMove(fen: string, difficulty: Difficulty): Promise<EngineMove> {
+  bestMove(fen: string, difficulty: Difficulty, maxTimeMs = Infinity): Promise<EngineMove> {
     // Deeper settings get a longer leash, but the budget leaves headroom so the
     // wall-clock stays inside the plan's 2s Phase 3 exit criterion.
-    return this.run(fen, difficulty, budgetFor(difficulty));
+    return this.run(fen, difficulty, Math.min(budgetFor(difficulty), maxTimeMs));
   }
 
   async evaluate(fen: string): Promise<number> {

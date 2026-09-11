@@ -3,9 +3,10 @@
  * promotion picker and the result card.
  */
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useGame, actions } from './useGame';
 import { PIECE_NAME, type Color, type PieceType } from '../core/types';
+import { clockNow, formatClock, isLowTime, remainingMs, type ClockState } from '../core/clock';
 
 const GLYPH: Record<Color, Record<PieceType, string>> = {
   w: { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' },
@@ -77,6 +78,58 @@ function TopBar() {
   );
 }
 
+/** Re-renders the caller at 10 Hz while `active` — tenths are the finest unit shown. */
+function useTicker(active: boolean): void {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!active) return;
+    const id = window.setInterval(() => setTick((tick) => tick + 1), 100);
+    return () => window.clearInterval(id);
+  }, [active]);
+}
+
+function ClockFace({ clock, color, label, now }: { clock: ClockState; color: Color; label: string; now: number }) {
+  const ms = remainingMs(clock, color, now);
+  return (
+    <div
+      className="clock-face"
+      data-running={clock.running === color}
+      data-low={isLowTime(clock, color, now)}
+      data-flagged={ms <= 0}
+    >
+      <span className="clock-label">
+        <span className="turn-dot" data-color={color} />
+        {label}
+      </span>
+      <span className="clock-time">{formatClock(ms)}</span>
+    </div>
+  );
+}
+
+function Clocks() {
+  const clock = useGame((s) => s.clock);
+  const mode = useGame((s) => s.config.mode);
+  const humanColor = useGame((s) => s.config.humanColor);
+  useTicker(clock?.running != null);
+  if (!clock) return null;
+
+  // The clock never counts down in state; each render derives it from now.
+  const now = clockNow();
+  const vsComputer = mode === 'human-vs-computer';
+  // Your own clock sits nearest you, as it would across a real board.
+  const bottom: Color = vsComputer ? humanColor : 'w';
+  const top: Color = bottom === 'w' ? 'b' : 'w';
+  const label = (color: Color) =>
+    vsComputer ? (color === humanColor ? 'You' : 'Enemy') : color === 'w' ? 'White' : 'Black';
+
+  return (
+    <div className="clocks">
+      <ClockFace clock={clock} color={top} label={label(top)} now={now} />
+      <ClockFace clock={clock} color={bottom} label={label(bottom)} now={now} />
+    </div>
+  );
+}
+
 function SidePanel() {
   const pieces = useGame((s) => s.pieces);
   const history = useGame((s) => s.history);
@@ -108,6 +161,7 @@ function SidePanel() {
 
   return (
     <div className="hud-side">
+      <Clocks />
       <p className="panel-heading">Momentum</p>
       <div className="eval-bar">
         <div
@@ -193,12 +247,24 @@ function ResultCard() {
 
   const title =
     result.winner === null
-      ? 'Stalemate'
+      ? result.kind === 'stalemate'
+        ? 'Stalemate'
+        : 'Draw'
       : outcome === 'loss'
         ? 'Defeat'
         : config.mode === 'human-vs-computer'
           ? 'Victory'
           : `${result.winner === 'w' ? 'White' : 'Black'} wins`;
+
+  const loserName = result.winner === 'w' ? 'Black' : 'White';
+  const timeoutDetail =
+    result.winner === null
+      ? 'Time ran out, but no mate was possible'
+      : config.mode === 'human-vs-computer'
+        ? outcome === 'win'
+          ? 'The enemy ran out of time'
+          : 'You ran out of time'
+        : `${loserName} ran out of time`;
 
   const detail: Record<string, string> = {
     checkmate: 'By checkmate',
@@ -207,7 +273,7 @@ function ResultCard() {
     'threefold-repetition': 'The same position, three times over',
     'fifty-move': 'Fifty moves without progress',
     resignation: 'Resigned the field',
-    timeout: 'Out of time',
+    timeout: timeoutDetail,
   };
 
   return (

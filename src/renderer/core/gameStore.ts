@@ -10,6 +10,17 @@
 import { createStore } from 'zustand/vanilla';
 import { Rules } from './rules';
 import {
+  clockNow,
+  createClock,
+  flaggedSide,
+  pressClock,
+  remainingMs,
+  startClock,
+  stopClock,
+  thinkingBudget,
+  type ClockState,
+} from './clock';
+import {
   DEFAULT_CONFIG,
   type Cinematic,
   type Color,
@@ -62,6 +73,9 @@ export interface GameSnapshot {
   // Engine
   thinking: boolean;
   evaluation: number;
+
+  /** null when the game is untimed. */
+  clock: ClockState | null;
 }
 
 export interface GameActions {
@@ -129,6 +143,8 @@ export const gameStore = createStore<GameStore>((set, get) => ({
   thinking: false,
   evaluation: 0,
 
+  clock: null,
+
   // -- wiring --------------------------------------------------------------
 
   attachEngine(next) {
@@ -165,6 +181,7 @@ export const gameStore = createStore<GameStore>((set, get) => ({
       active: null,
       thinking: false,
       evaluation: 0,
+      clock: config.timeControl ? createClock(config.timeControl) : null,
     });
     maybeRunEngine(set, get);
   },
@@ -258,6 +275,17 @@ type Set = (partial: Partial<GameStore>) => void;
 type Get = () => GameStore;
 
 function commitMove(set: Set, get: Get, intent: MoveIntent): void {
+  const mover = rules.turn;
+  const now = clockNow();
+  const { clock } = get();
+
+  // The flag timer can fire late when the event loop is busy, so a move can
+  // arrive after time has already run out. It does not count.
+  if (clock && flaggedSide(clock, now) === mover) {
+    flagFall(set, get, mover);
+    return;
+  }
+
   const applied = rules.move(intent);
   if (!applied) {
     emit({ type: 'illegal' });
@@ -277,6 +305,7 @@ function commitMove(set: Set, get: Get, intent: MoveIntent): void {
     active: null,
     phase: 'animating',
     checkedKing: null,
+    clock: clock ? pressClock(clock, mover, now) : null,
   });
 
   advanceQueue(set, get);
@@ -321,16 +350,25 @@ function maybeRunEngine(set: Set, get: Get): void {
   if (!engine) return;
 
   const fen = rules.fen;
+  const gameId = state.gameId;
   set({ phase: 'thinking', thinking: true });
 
+  // Read after the phase change, which is what starts the engine's clock.
+  const { clock } = get();
+  const maxTimeMs = clock ? thinkingBudget(clock, state.turn, clockNow()) : undefined;
+
+  // A reply is stale if the game was restarted, or the flag fell, while the
+  // engine was thinking. Stale replies must not touch the state at all — a new
+  // game may already have its own search running.
+  const isStale = () => {
+    const current = get();
+    return current.gameId !== gameId || current.phase !== 'thinking' || rules.fen !== fen;
+  };
+
   engine
-    .bestMove(fen, state.config.difficulty)
+    .bestMove(fen, state.config.difficulty, maxTimeMs)
     .then((result) => {
-      // Guard against a game that was restarted while the engine was thinking.
-      if (rules.fen !== fen) {
-        set({ thinking: false });
-        return;
-      }
+      if (isStale()) return;
       set({ thinking: false, evaluation: result.score * (state.turn === 'w' ? 1 : -1) });
       if (result.move) {
         commitMove(set, get, result.move);
@@ -339,9 +377,103 @@ function maybeRunEngine(set: Set, get: Get): void {
       }
     })
     .catch(() => {
+      if (isStale()) return;
       set({ thinking: false, phase: 'idle' });
     });
 }
+
+// ---------------------------------------------------------------------------
+// Clock
+// ---------------------------------------------------------------------------
+
+let flagTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Whose clock should be running right now, if anyone's.
+ *
+ * A clock runs exactly when its owner is able to act. Never while a cinematic
+ * plays: input is locked then, so charging either side for it would make the
+ * animation speed setting a chess advantage.
+ */
+function clockOwner(state: GameStore): Color | null {
+  if (!state.clock || state.screen !== 'game') return null;
+  const canAct = state.phase === 'idle' || state.phase === 'promoting' || state.phase === 'thinking';
+  return canAct ? state.turn : null;
+}
+
+/**
+ * Keeps the running clock in step with the FSM. Subscribed to the store rather
+ * than called from each transition, so no future phase change can forget to
+ * start or stop a clock.
+ */
+function reconcileClock(state: GameStore): void {
+  const { clock } = state;
+  if (!clock) {
+    cancelFlagTimer();
+    return;
+  }
+
+  const owner = clockOwner(state);
+  if (clock.running === owner) return;
+
+  const now = clockNow();
+  const next = owner ? startClock(clock, owner, now) : stopClock(clock, now);
+  cancelFlagTimer();
+  if (owner) scheduleFlagTimer(remainingMs(next, owner, now));
+  gameStore.setState({ clock: next });
+}
+
+function scheduleFlagTimer(ms: number): void {
+  flagTimer = setTimeout(checkFlag, Math.max(1, Math.ceil(ms)));
+}
+
+function cancelFlagTimer(): void {
+  if (flagTimer === null) return;
+  clearTimeout(flagTimer);
+  flagTimer = null;
+}
+
+function checkFlag(): void {
+  flagTimer = null;
+  const { clock } = gameStore.getState();
+  if (!clock?.running) return;
+
+  const left = remainingMs(clock, clock.running, clockNow());
+  // Timers and performance.now() are separate clocks and can disagree by a
+  // millisecond; if the timer was early, simply wait out the difference.
+  if (left > 0) {
+    scheduleFlagTimer(left);
+    return;
+  }
+  flagFall(gameStore.setState, gameStore.getState, clock.running);
+}
+
+/**
+ * `loser` ran out of time. Played through the cinematic queue rather than set
+ * directly, so a flag fall gets the same victory aura, sting and result card as
+ * a checkmate.
+ */
+function flagFall(set: Set, get: Get, loser: Color): void {
+  const winner: Color = loser === 'w' ? 'b' : 'w';
+  const result: GameResult = { kind: 'timeout', winner: rules.canEverMate(winner) ? winner : null };
+  const { clock } = get();
+
+  set({
+    // Setting the phase in the same update stops the clock before anything
+    // could see an idle phase and restart it.
+    phase: 'animating',
+    clock: clock ? stopClock(clock, clockNow()) : null,
+    selected: null,
+    targets: [],
+    pendingPromotion: null,
+    thinking: false,
+    queue: [{ kind: 'gameOver', result, winnerKing: result.winner ? rules.kingId(result.winner) : null }],
+    active: null,
+  });
+  advanceQueue(set, get);
+}
+
+gameStore.subscribe(reconcileClock);
 
 /** Test seam: swap the Rules instance directly. */
 export function __setRulesForTest(next: Rules): void {

@@ -81,6 +81,13 @@ export type ThemeId = 'classical' | 'animated';
 /** 1 = beginner … 5 = strongest. Maps to search depth + deliberate error rate. */
 export type Difficulty = 1 | 2 | 3 | 4 | 5;
 
+export interface TimeControl {
+  /** Starting time per side. */
+  initialMs: number;
+  /** Fischer increment, banked by a side each time it completes a move. */
+  incrementMs: number;
+}
+
 export interface GameConfig {
   mode: GameMode;
   theme: ThemeId;
@@ -94,6 +101,8 @@ export interface GameConfig {
    * both players always look at the board from behind their own back rank.
    */
   autoFlipBoard: boolean;
+  /** Chess clock. null plays untimed, which is the default — a clock is opt-in. */
+  timeControl: TimeControl | null;
 }
 
 export const DEFAULT_CONFIG: GameConfig = {
@@ -104,6 +113,7 @@ export const DEFAULT_CONFIG: GameConfig = {
   animationSpeed: 1,
   skipAnimations: false,
   autoFlipBoard: true,
+  timeControl: null,
 };
 
 // ---------------------------------------------------------------------------

@@ -290,6 +290,69 @@ button {
   color: var(--steel-500);
 }
 
+.clocks {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.clock-face {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--steel-300);
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.clock-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--steel-500);
+}
+
+.clock-label .turn-dot {
+  width: 8px;
+  height: 8px;
+  box-shadow: none;
+}
+
+.clock-time {
+  font-family: 'Consolas', 'SF Mono', monospace;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clock-face[data-running='true'] {
+  border-color: rgba(216, 150, 74, 0.55);
+  background: linear-gradient(180deg, rgba(216, 150, 74, 0.16), rgba(216, 150, 74, 0.05));
+  color: var(--ember-bright);
+}
+
+.clock-face[data-low='true'] .clock-time {
+  color: var(--blood);
+}
+
+.clock-face[data-running='true'][data-low='true'] {
+  border-color: rgba(194, 69, 44, 0.6);
+  background: linear-gradient(180deg, rgba(194, 69, 44, 0.2), rgba(194, 69, 44, 0.06));
+}
+
+.clock-face[data-running='true'][data-low='true'] .clock-time {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.clock-face[data-flagged='true'] {
+  border-color: rgba(194, 69, 44, 0.6);
+}
+
 .eval-bar {
   position: relative;
   height: 8px;

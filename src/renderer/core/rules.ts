@@ -17,7 +17,9 @@ import {
   type PieceState,
   type PieceType,
   type Square,
+  fileIndex,
   isSquare,
+  rankIndex,
 } from './types';
 
 export interface AppliedMove {
@@ -33,6 +35,11 @@ export interface PendingPromotion {
   from: Square;
   to: Square;
   color: Color;
+}
+
+/** 0 for dark squares, 1 for light. */
+function squareColour(square: Square): number {
+  return (fileIndex(square) + rankIndex(square)) % 2;
 }
 
 export class Rules {
@@ -118,6 +125,46 @@ export class Rules {
       score += (piece.color === 'w' ? 1 : -1) * value[piece.type];
     }
     return score;
+  }
+
+  /**
+   * Whether `color` has any sequence of legal moves that ends in mate, however
+   * cooperative the opponent. Only consulted when a flag falls: running out of
+   * time against a side that could never mate is a draw, not a loss.
+   *
+   * - A lone king can never mate.
+   * - King + one knight needs an enemy rook, bishop, knight or pawn to hem the
+   *   king in.
+   * - King + bishops all on one square colour needs an enemy knight, pawn, or a
+   *   bishop on the other colour.
+   * - Anything more counts as able to mate.
+   */
+  canEverMate(color: Color): boolean {
+    const own: PieceState[] = [];
+    const enemy: PieceState[] = [];
+    for (const piece of this.pieces.values()) {
+      if (piece.square === null || piece.type === 'k') continue;
+      (piece.color === color ? own : enemy).push(piece);
+    }
+
+    if (own.length === 0) return false;
+    if (own.some((p) => p.type === 'p' || p.type === 'r' || p.type === 'q')) return true;
+
+    // Only minor pieces remain.
+    const knights = own.filter((p) => p.type === 'n').length;
+    const bishops = own.filter((p) => p.type === 'b');
+    if (knights > 1 || (knights === 1 && bishops.length > 0)) return true;
+
+    if (knights === 1) {
+      return enemy.some((p) => p.type === 'r' || p.type === 'b' || p.type === 'n' || p.type === 'p');
+    }
+
+    const colours = new Set(bishops.map((p) => squareColour(p.square!)));
+    if (colours.size > 1) return true;
+    const [bishopColour] = colours;
+    return enemy.some(
+      (p) => p.type === 'n' || p.type === 'p' || (p.type === 'b' && squareColour(p.square!) !== bishopColour),
+    );
   }
 
   kingId(color: Color): PieceId | null {

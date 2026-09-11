@@ -16,6 +16,7 @@ Built with Electron, TypeScript, React and three.js. Plays hotseat or against a 
 - **Piece-specific movement.** The knight *leaps* its L-shape, the rook strides, the bishop glides, the king shuffles.
 - **Auras.** A subtle ambient glow tracks material advantage, the checked king pulses red, and the winning king raises his sword in a burst of gold.
 - **Hotseat board flip.** In Man vs Man the camera swings round to whoever is to move, so both players read the board from their own side.
+- **Optional chess clock.** Off by default. Choose bullet, blitz, rapid or classical, with Fischer increment. The clock pauses while a move animates, so a long duel never costs anyone time — and running out of time against a side that cannot mate is scored as a draw.
 - **Laddered AI.** Five difficulty rungs from *Squire* to *Sovereign*, all returning a move in under two seconds.
 - **Full rules.** Castling, en passant, promotion, stalemate, threefold repetition, insufficient material.
 - **Zero external assets.** Every 3D object is generated in code and every sound is synthesised at runtime. Nothing downloads, and the app works fully offline.
@@ -88,13 +89,14 @@ src/
    ├─ core/                  ── PURE: no three.js, no React ──
    │  ├─ rules.ts            chess.js wrapper + stable piece identity
    │  ├─ gameStore.ts        the turn/animation state machine
+   │  ├─ clock.ts            chess clock, derived from timestamps
    │  └─ engine/             negamax AI in a Web Worker
    ├─ scene/
    │  ├─ geometry/           procedural Staunton set + armoured characters
    │  └─ animation/          cinematic director, poses, motion registry
    ├─ ui/                    React menus and HUD
    └─ audio/                 Web Audio synthesis
-tests/                       vitest — rules and engine
+tests/                       vitest — rules, clock and engine
 doc/screenshots/             images used by this README
 ```
 
@@ -127,7 +129,7 @@ doc/screenshots/             images used by this README
 
 ```bash
 npm run dev         # electron-vite dev with HMR
-npm test            # vitest — rules and engine
+npm test            # vitest — rules, clock and engine
 npm run typecheck   # tsc --noEmit
 npm run build       # bundle main + preload + renderer
 npm run dist        # Windows NSIS installer
@@ -137,8 +139,10 @@ npm run dist        # Windows NSIS installer
 
 ## Testing
 
-33 unit tests cover the rules layer (piece identity, all special moves, terminal
-positions) and the engine (evaluation, mate-finding, legality, time budgets).
+78 unit tests cover the rules layer (piece identity, all special moves, terminal
+positions, mating material), the chess clock (timing, increments, flag falls, and
+when it runs relative to the game's state machine) and the engine (evaluation,
+mate-finding, legality, time budgets).
 
 ```bash
 npm test
@@ -160,7 +164,7 @@ Three things are deliberate placeholders, each behind a seam that makes swapping
 - **The AI is a built-in negamax search** (alpha-beta, quiescence, piece-square tables, iterative deepening), not Stockfish — so the game runs with no asset download. `ChessEngine` is the interface to drop Stockfish in behind.
 - **Audio is synthesised**, not sampled. No binary audio assets.
 
-Not yet built: clocks, undo/takeback, saved games, online play.
+Not yet built: undo/takeback, saved games, online play.
 
 ---
 

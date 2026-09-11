@@ -5,9 +5,20 @@
 import { useGame, actions } from './useGame';
 import { DIFFICULTY } from '../core/engine';
 import { unlockAudio } from '../audio';
-import type { Color, Difficulty, GameMode, ThemeId } from '../core/types';
+import { TIME_CONTROL_PRESETS } from '../core/clock';
+import type { Color, Difficulty, GameMode, ThemeId, TimeControl } from '../core/types';
 
 const DIFFICULTIES: Difficulty[] = [1, 2, 3, 4, 5];
+
+const UNTIMED = 'off';
+
+function presetIdFor(control: TimeControl | null): string {
+  if (!control) return UNTIMED;
+  const match = TIME_CONTROL_PRESETS.find(
+    (preset) => preset.control.initialMs === control.initialMs && preset.control.incrementMs === control.incrementMs,
+  );
+  return match?.id ?? UNTIMED;
+}
 
 function Options<T extends string | number>({
   value,
@@ -69,6 +80,22 @@ export function Menu() {
             options={[
               { value: 'classical', label: 'Classical', hint: 'Staunton set' },
               { value: 'animated', label: 'Animated', hint: '3D characters' },
+            ]}
+          />
+        </div>
+
+        <div className="field">
+          <label className="field-label">Clock &middot; minutes + seconds per move</label>
+          <Options<string>
+            value={presetIdFor(config.timeControl)}
+            onChange={(id) =>
+              actions.setConfig({
+                timeControl: TIME_CONTROL_PRESETS.find((preset) => preset.id === id)?.control ?? null,
+              })
+            }
+            options={[
+              { value: UNTIMED, label: 'Off', hint: 'untimed' },
+              ...TIME_CONTROL_PRESETS.map((preset) => ({ value: preset.id, label: preset.label, hint: preset.hint })),
             ]}
           />
         </div>
