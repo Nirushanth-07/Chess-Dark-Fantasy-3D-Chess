@@ -13,7 +13,7 @@ Built with Electron, TypeScript, React and three.js. Plays hotseat or against a 
 - **Two themes over one engine.** Classical is fast and low-spec; Animated runs the full duel and aura system. Switch between them without touching game logic.
 - **Two modes.** Man vs Man (hotseat) and Man vs Machine.
 - **Capture duels.** The attacker walks up, strikes, and the victim's death animation is triggered on the attacker's exact hit frame — with impact sound and camera shake on the same frame.
-- **Piece-specific movement.** The knight *leaps* its L-shape, the rook strides, the bishop glides, the king shuffles.
+- **Piece-specific movement.** The knight rides a warhorse that gallops through its L-shaped leap and charges with a couched lance; the rook strides, the bishop glides, the king shuffles.
 - **Auras.** A subtle ambient glow tracks material advantage, the checked king pulses red, and the winning king raises his sword in a burst of gold.
 - **Hotseat board flip.** In Man vs Man the camera swings round to whoever is to move, so both players read the board from their own side.
 - **Optional chess clock.** Off by default. Choose bullet, blitz, rapid or classical, with Fischer increment. The clock pauses while a move animates, so a long duel never costs anyone time — and running out of time against a side that cannot mate is scored as a draw.
@@ -92,7 +92,7 @@ src/
    │  ├─ clock.ts            chess clock, derived from timestamps
    │  └─ engine/             negamax AI in a Web Worker
    ├─ scene/
-   │  ├─ geometry/           procedural Staunton set + armoured characters
+   │  ├─ geometry/           procedural Staunton set, armoured characters, warhorse
    │  └─ animation/          cinematic director, poses, motion registry
    ├─ ui/                    React menus and HUD
    └─ audio/                 Web Audio synthesis

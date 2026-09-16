@@ -10,7 +10,7 @@
  */
 
 import type { PieceType } from '../../core/types';
-import type { RigJoints } from '../geometry/character';
+import type { MountJoints, RigJoints } from '../geometry/character';
 
 export type PoseName = 'idle' | 'walk' | 'attack' | 'death' | 'victory' | 'stagger' | 'seated';
 
@@ -60,9 +60,22 @@ function resetJoints(j: RigJoints): void {
   ]) {
     joint.rotation.set(0, 0, 0);
   }
-  j.hips.position.y = 0.46;
+  j.hips.position.y = j.hipRest;
   j.root.position.y = 0;
   j.root.rotation.set(0, j.root.rotation.y, 0);
+  j.weapon?.rotation.set(0, 0, 0);
+
+  const mount = j.mount;
+  if (!mount) return;
+  mount.body.position.set(0, mount.restY, 0);
+  mount.body.rotation.set(0, 0, 0);
+  mount.neck.rotation.set(0, 0, 0);
+  mount.head.rotation.set(0, 0, 0);
+  for (const leg of mount.legs) {
+    leg.upper.rotation.set(0, 0, 0);
+    leg.lower.rotation.set(0, 0, 0);
+  }
+  for (const segment of mount.tail) segment.rotation.set(0, 0, 0);
 }
 
 /**
@@ -83,7 +96,7 @@ function applyCloth(j: RigJoints, time: number, sway: number): void {
 function idle(j: RigJoints, time: number, type: PieceType): void {
   const breathe = Math.sin(time * 1.4) * 0.5 + 0.5;
   j.chest.rotation.x = -0.02 - breathe * 0.025;
-  j.hips.position.y = 0.46 + breathe * 0.006;
+  j.hips.position.y = j.hipRest + breathe * 0.006;
   j.head.rotation.y = Math.sin(time * 0.45) * 0.12;
   j.head.rotation.x = 0.03;
 
@@ -166,7 +179,7 @@ function walk(j: RigJoints, time: number, type: PieceType): void {
   j.elbowR.rotation.x = -0.35 - Math.abs(s) * 0.2;
 
   // Vertical bob at twice cadence, plus a torso counter-rotation.
-  j.hips.position.y = 0.46 + Math.abs(Math.cos(phase)) * 0.022;
+  j.hips.position.y = j.hipRest + Math.abs(Math.cos(phase)) * 0.022;
   j.hips.rotation.y = s * 0.09;
   j.chest.rotation.y = -s * 0.14;
   j.chest.rotation.x = -0.06;
@@ -178,7 +191,7 @@ function walk(j: RigJoints, time: number, type: PieceType): void {
     j.hipR.rotation.x = 0;
     j.kneeL.rotation.x = 0;
     j.kneeR.rotation.x = 0;
-    j.hips.position.y = 0.46 + Math.sin(time * 2.4) * 0.02;
+    j.hips.position.y = j.hipRest + Math.sin(time * 2.4) * 0.02;
     j.root.position.y = 0.05 + Math.sin(time * 2.0) * 0.015;
     j.chest.rotation.x = -0.12;
   }
@@ -198,7 +211,7 @@ function attack(j: RigJoints, u: number, type: PieceType): void {
   // Lunge forward through the strike, settle back after.
   const lunge = Math.sin(clamp01(u) * Math.PI) * 0.22;
   j.root.position.y = 0;
-  j.hips.position.y = 0.46 - Math.sin(clamp01(u) * Math.PI) * 0.05;
+  j.hips.position.y = j.hipRest - Math.sin(clamp01(u) * Math.PI) * 0.05;
 
   if (type === 'b') {
     // Ranged cast — no lunge, staff thrust forward, off hand extended.
@@ -246,7 +259,7 @@ function death(j: RigJoints, u: number): void {
   const fall = ease(u);
   const buckle = ease(clamp01(u * 1.8));
 
-  j.hips.position.y = lerp(0.46, 0.12, fall);
+  j.hips.position.y = lerp(j.hipRest, j.hipRest - 0.34, fall);
   j.root.rotation.x = lerp(0, 0.5, fall);
   j.chest.rotation.x = lerp(0, 0.9, fall);
   j.chest.rotation.z = lerp(0, 0.3, fall);
@@ -295,12 +308,238 @@ function stagger(j: RigJoints, u: number): void {
   j.chest.rotation.x = 0.35 * hit;
   j.chest.rotation.z = 0.18 * hit;
   j.head.rotation.x = 0.4 * hit;
-  j.hips.position.y = 0.46 - 0.04 * hit;
+  j.hips.position.y = j.hipRest - 0.04 * hit;
   j.shoulderL.rotation.x = -0.2 + 0.5 * hit;
   j.shoulderR.rotation.x = -0.1 + 0.6 * hit;
   j.hipL.rotation.x = -0.2 * hit;
   j.kneeR.rotation.x = 0.35 * hit;
   applyCloth(j, u * 6, 0.3 * hit);
+}
+
+// ---------------------------------------------------------------------------
+// Mounted poses
+//
+// The horse carries the motion and the rider reacts to it. Because the rider's
+// hips hang off the horse's body, anything written to `mount.body` moves both —
+// these functions only ever add the rider's own reaction on top.
+// ---------------------------------------------------------------------------
+
+/** The rider's seat: thighs forward over the saddle, feet in the stirrups. */
+function seat(j: RigJoints, lean: number): void {
+  j.chest.rotation.x = lean;
+  // Thighs angle down and splay round the barrel, and the shin tucks back so the
+  // heel sits under the hip. Level thighs read as a man sitting on a chair that
+  // happens to be a horse.
+  j.hipL.rotation.x = -0.55;
+  j.hipR.rotation.x = -0.55;
+  j.hipL.rotation.z = 0.3;
+  j.hipR.rotation.z = -0.3;
+  j.kneeL.rotation.x = 0.95;
+  j.kneeR.rotation.x = 0.95;
+
+  // Reins in the off hand; the lance rests upright in the weapon hand.
+  j.shoulderR.rotation.x = -0.6;
+  j.shoulderR.rotation.z = 0.3;
+  j.elbowR.rotation.x = -0.75;
+  j.shoulderL.rotation.x = -0.12;
+  j.shoulderL.rotation.z = -0.16;
+  j.elbowL.rotation.x = -0.35;
+  aimLance(j, 0);
+}
+
+/**
+ * Points the lance `pitch` radians forward of upright, measured against the
+ * horse's back. The grip hangs off the elbow, so every rotation up the arm would
+ * otherwise swing the lance with it — the charge raises the arm by about as much
+ * as it lowers the lance, and they cancel out. Poses must call this after they
+ * have finished moving the arm.
+ */
+function aimLance(j: RigJoints, pitch: number): void {
+  if (!j.weapon) return;
+  const arm = j.hips.rotation.x + j.chest.rotation.x + j.shoulderL.rotation.x + j.elbowL.rotation.x;
+  j.weapon.rotation.x = pitch - arm;
+}
+
+/** Just short of level: a couched lance rides slightly nose-up. */
+const COUCHED = 1.45;
+
+function horseTail(m: MountJoints, time: number, sway: number): void {
+  m.tail.forEach((segment, index) => {
+    segment.rotation.x = Math.sin(time * 2.4 - index * 0.5) * 0.06 + sway * (0.5 + index * 0.4);
+    segment.rotation.z = Math.sin(time * 1.7 - index * 0.6) * 0.05;
+  });
+}
+
+function mountedIdle(j: RigJoints, m: MountJoints, time: number): void {
+  const breathe = Math.sin(time * 1.3) * 0.5 + 0.5;
+  m.body.position.y = m.restY + breathe * 0.006;
+  m.neck.rotation.x = 0.04 + Math.sin(time * 0.9) * 0.05;
+  m.head.rotation.x = -0.05 + Math.sin(time * 0.9 + 0.6) * 0.06;
+  m.head.rotation.y = Math.sin(time * 0.5) * 0.12;
+
+  // A front hoof paws the ground on a slow cycle — the tell of an impatient horse.
+  const paw = Math.max(0, Math.sin(time * 0.8 - 1.2));
+  m.legs[0].upper.rotation.x = -paw * 0.45;
+  m.legs[0].lower.rotation.x = paw * 0.7;
+
+  horseTail(m, time, 0);
+  seat(j, -0.04 - breathe * 0.02);
+  j.head.rotation.y = Math.sin(time * 0.45) * 0.1;
+  applyCloth(j, time, 0);
+}
+
+/** A canter: the hind legs drive, the front legs reach, the body rocks. */
+function mountedWalk(j: RigJoints, m: MountJoints, time: number): void {
+  const phase = time * 6.2;
+  const offsets = [0, 0.4, Math.PI, Math.PI + 0.4]; // FL, FR, HL, HR
+
+  m.legs.forEach((leg, index) => {
+    const p = phase + offsets[index];
+    leg.upper.rotation.x = Math.sin(p) * 0.7;
+    // A knee folds backward and a hock forward, so the sign flips at the hips.
+    leg.lower.rotation.x = Math.max(0, -Math.sin(p - 0.5)) * 0.95 * (index < 2 ? 1 : -1);
+  });
+
+  m.body.position.y = m.restY + Math.abs(Math.sin(phase)) * 0.035;
+  m.body.rotation.x = Math.sin(phase * 2) * 0.07;
+  m.neck.rotation.x = 0.1 + Math.sin(phase) * 0.12;
+  m.head.rotation.x = -0.12 - Math.sin(phase) * 0.1;
+  horseTail(m, time, -0.35);
+
+  // The rider posts to the gait rather than sitting rigid.
+  seat(j, -0.14 + Math.sin(phase * 2) * 0.04);
+  j.hips.position.y = j.hipRest + Math.abs(Math.sin(phase)) * 0.01;
+  j.head.rotation.x = 0.04;
+  applyCloth(j, time, -0.3);
+}
+
+/** The charge: the horse gathers and drives, the lance drops to couched. */
+function mountedAttack(j: RigJoints, m: MountJoints, u: number): void {
+  const hit = HIT_FRAME.n;
+  const windup = ease(clamp01(u / hit));
+  const follow = ease(clamp01((u - hit) / (1 - hit)));
+  const surge = Math.sin(clamp01(u) * Math.PI);
+
+  m.body.position.y = m.restY + surge * 0.03;
+  m.body.rotation.x = -0.2 * windup + 0.14 * follow;
+  m.neck.rotation.x = 0.1 + 0.25 * windup - 0.12 * follow;
+  m.head.rotation.x = -0.15 - 0.1 * windup;
+
+  // Front legs lift on the gather and strike down through the follow-through.
+  for (const index of [0, 1]) {
+    m.legs[index].upper.rotation.x = lerp(0, -0.8, windup) + follow * 0.95;
+    m.legs[index].lower.rotation.x = lerp(0, 0.85, windup) - follow * 0.6;
+  }
+  for (const index of [2, 3]) {
+    m.legs[index].upper.rotation.x = lerp(0, 0.35, windup) - follow * 0.2;
+  }
+  horseTail(m, u * 6, -0.5 * windup);
+
+  // The lance swings down from upright to level, landing flat on the hit frame.
+  seat(j, -0.1 - 0.2 * windup + 0.12 * follow);
+  j.shoulderL.rotation.x = lerp(-0.12, -0.55, windup) + follow * 0.25;
+  j.shoulderL.rotation.z = lerp(-0.16, -0.32, windup);
+  j.elbowL.rotation.x = lerp(-0.35, -0.5, windup);
+  aimLance(j, lerp(0, COUCHED, windup) - follow * 0.2);
+  j.head.rotation.x = 0.1 * windup;
+  applyCloth(j, u * 5, -0.5 * windup + 0.3 * follow);
+}
+
+function mountedDeath(j: RigJoints, m: MountJoints, u: number): void {
+  const fall = ease(u);
+  const buckle = ease(clamp01(u * 1.7));
+
+  // The horse goes down first and the rider is thrown forward over its neck.
+  m.body.position.y = m.restY - fall * 0.3;
+  m.body.rotation.x = fall * 0.55;
+  m.body.rotation.z = fall * 0.32;
+  m.neck.rotation.x = fall * 0.7;
+  m.head.rotation.x = fall * 0.45;
+  m.legs.forEach((leg, index) => {
+    leg.upper.rotation.x = (index < 2 ? -1.1 : 0.9) * buckle;
+    leg.lower.rotation.x = (index < 2 ? 1.4 : -1.2) * buckle;
+  });
+  horseTail(m, u * 3, 0.5 * fall);
+
+  seat(j, 0.2 + fall * 0.7);
+  j.chest.rotation.z = fall * 0.3;
+  j.head.rotation.x = fall * 0.6;
+  j.shoulderL.rotation.x = lerp(-0.12, 1.1, ease(clamp01(u * 2.2)));
+  aimLance(j, lerp(0, 1.3, fall)); // the lance topples forward with him
+  applyCloth(j, u * 3, 0.4 * fall);
+}
+
+/** The horse rears and the rider raises the lance. */
+function mountedVictory(j: RigJoints, m: MountJoints, time: number): void {
+  const settle = ease(clamp01(time / 0.8));
+  const breathe = Math.sin(time * 2.0) * 0.5 + 0.5;
+
+  m.body.rotation.x = lerp(0, -0.62, settle);
+  m.body.position.y = m.restY + lerp(0, 0.05, settle);
+  m.neck.rotation.x = lerp(0, -0.25, settle);
+  m.head.rotation.x = lerp(0, 0.35, settle);
+  for (const index of [0, 1]) {
+    m.legs[index].upper.rotation.x = lerp(0, -1.25 - index * 0.15, settle);
+    m.legs[index].lower.rotation.x = lerp(0, 1.1, settle);
+  }
+  for (const index of [2, 3]) {
+    m.legs[index].upper.rotation.x = lerp(0, 0.3, settle);
+  }
+  horseTail(m, time, 0.2 * settle);
+
+  // The rider leans back into the rear and thrusts the lance skyward.
+  seat(j, lerp(-0.04, 0.3, settle));
+  j.shoulderL.rotation.x = lerp(-0.12, -2.5, settle) + breathe * 0.04;
+  j.shoulderL.rotation.z = lerp(-0.16, -0.1, settle);
+  j.elbowL.rotation.x = lerp(-0.35, -0.1, settle);
+  // The horse's rear tips everything back; lean the lance forward against it so
+  // it still points at the sky.
+  aimLance(j, lerp(0, 0.55, settle));
+  j.head.rotation.x = lerp(0, -0.2, settle);
+  applyCloth(j, time, -0.2 * settle);
+}
+
+function mountedStagger(j: RigJoints, m: MountJoints, u: number): void {
+  const hit = Math.sin(clamp01(u) * Math.PI);
+  m.body.rotation.x = -0.25 * hit;
+  m.body.position.y = m.restY + 0.02 * hit;
+  m.neck.rotation.x = -0.3 * hit;
+  m.head.rotation.x = 0.4 * hit;
+  for (const index of [0, 1]) {
+    m.legs[index].upper.rotation.x = -0.6 * hit;
+    m.legs[index].lower.rotation.x = 0.5 * hit;
+  }
+  horseTail(m, u * 6, 0.3 * hit);
+
+  seat(j, 0.25 * hit);
+  j.head.rotation.x = 0.35 * hit;
+  j.shoulderL.rotation.x = -0.12 + 0.4 * hit;
+  aimLance(j, 0.25 * hit);
+  applyCloth(j, u * 6, 0.3 * hit);
+}
+
+function mountedPose(j: RigJoints, m: MountJoints, pose: PoseName, time: number): void {
+  switch (pose) {
+    case 'walk':
+      mountedWalk(j, m, time);
+      break;
+    case 'attack':
+      mountedAttack(j, m, time);
+      break;
+    case 'death':
+      mountedDeath(j, m, time);
+      break;
+    case 'victory':
+      mountedVictory(j, m, time);
+      break;
+    case 'stagger':
+      mountedStagger(j, m, time);
+      break;
+    default:
+      // 'seated' never reaches a mounted piece — he is already sitting down.
+      mountedIdle(j, m, time);
+      break;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -313,6 +552,10 @@ function stagger(j: RigJoints, u: number): void {
  */
 export function applyPose(joints: RigJoints, pose: PoseName, time: number, type: PieceType): void {
   resetJoints(joints);
+  if (joints.mount) {
+    mountedPose(joints, joints.mount, pose, time);
+    return;
+  }
   switch (pose) {
     case 'idle':
       idle(joints, time, type);

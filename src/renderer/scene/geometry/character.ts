@@ -39,6 +39,26 @@ import {
   turned,
   type MatKey,
 } from './armour';
+import { RIDER_SCALE, SADDLE_SEAT_Y, buildMount } from './mount';
+
+/**
+ * The horse under a mounted piece.
+ *
+ * The rider's hips hang off `body`, so every bit of the animal's motion — the
+ * bounce of a canter, a rear, a collapse — carries the rider with it instead of
+ * being written twice and drifting apart.
+ */
+export interface MountJoints {
+  /** The animal itself. Everything else here, and the rider, is under it. */
+  body: THREE.Group;
+  neck: THREE.Group;
+  head: THREE.Group;
+  /** Front-left, front-right, hind-left, hind-right — the gait relies on that order. */
+  legs: { upper: THREE.Group; lower: THREE.Group }[];
+  tail: THREE.Group[];
+  /** Height of `body` at rest, restored every frame before a pose is written. */
+  restY: number;
+}
 
 export interface RigJoints {
   root: THREE.Group;
@@ -55,6 +75,12 @@ export interface RigJoints {
   kneeR: THREE.Group;
   /** Cape / plume / mantle chain, animated as trailing secondary motion. */
   cloth: THREE.Group[];
+  /** Resting hip height, in the hips' own parent space. Mounted pieces differ. */
+  hipRest: number;
+  /** The weapon hand's grip, so a pose can swing the weapon independently. */
+  weapon?: THREE.Group;
+  /** Present only on mounted pieces. */
+  mount?: MountJoints;
 }
 
 export interface CharacterBuild {
@@ -69,7 +95,9 @@ export interface CharacterBuild {
 /** Overall height of each character, in board squares. */
 export const CHARACTER_HEIGHT: Record<PieceType, number> = {
   p: 0.92,
-  n: 1.06,
+  // Measured from the hooves to the top of the rider's helm. A horse is also
+  // half a square long, so below this the knight looks small beside the rook.
+  n: 1.1,
   b: 1.04,
   r: 1.12,
   q: 1.14,
@@ -159,9 +187,19 @@ export function buildCharacter(type: PieceType, color: Color): CharacterBuild {
   // Heroic proportions in body units: hip 0.47, shoulder 0.73, helm top ~1.0.
 
   const root = new THREE.Group();
+
+  // The knight rides. The horse is built first so the rider can be seated on
+  // the saddle rather than standing on the ground.
+  const mounted = type === 'n';
+  const mount = mounted ? buildMount(builder, root, rank) : null;
+  const hipRest = mount ? SADDLE_SEAT_Y : 0.46;
+
   const hips = new THREE.Group();
-  hips.position.y = 0.47;
-  root.add(hips);
+  hips.position.y = hipRest;
+  // Scaling the hips shrinks the whole rider toward the saddle. Poses never
+  // touch scale, so this survives every frame.
+  if (mount) hips.scale.setScalar(RIDER_SCALE);
+  (mount ? mount.body : root).add(hips);
 
   const chest = new THREE.Group();
   chest.position.y = 0.15;
@@ -186,11 +224,13 @@ export function buildCharacter(type: PieceType, color: Color): CharacterBuild {
   elbowR.position.y = -0.16;
   shoulderR.add(elbowR);
 
+  // A rider's thighs have to clear the barrel of the horse.
+  const legSpan = mounted ? 0.092 : 0.072;
   const hipL = new THREE.Group();
-  hipL.position.set(0.072, -0.03, 0);
+  hipL.position.set(legSpan, -0.03, 0);
   hips.add(hipL);
   const hipR = new THREE.Group();
-  hipR.position.set(-0.072, -0.03, 0);
+  hipR.position.set(-legSpan, -0.03, 0);
   hips.add(hipR);
 
   const kneeL = new THREE.Group();
@@ -207,6 +247,8 @@ export function buildCharacter(type: PieceType, color: Color): CharacterBuild {
     shoulderL, shoulderR, elbowL, elbowR,
     hipL, hipR, kneeL, kneeR,
     cloth: [],
+    hipRest,
+    ...(mount ? { mount } : {}),
   };
 
   // -- assembly ------------------------------------------------------------
@@ -605,6 +647,9 @@ function buildWeapon(b: ArmourBuilder, j: RigJoints, type: PieceType, rank: numb
   const grip = new THREE.Group();
   grip.position.set(0, -0.155, 0.025);
   j.elbowL.add(grip);
+  // Exposed so a pose can move the weapon on its own — the knight's lance drops
+  // from upright to couched without the arm having to do something unnatural.
+  j.weapon = grip;
   const trim: MatKey = rank >= 2 ? 'gold' : 'steel';
 
   switch (type) {

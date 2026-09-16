@@ -140,7 +140,8 @@ function AnimatedPiece({ piece }: { piece: PieceState }) {
   return (
     <group ref={group}>
       <primitive object={character.group} />
-      <mesh position={[0, 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      {/* A horse's shadow is long, not round; the disc turns with the piece. */}
+      <mesh position={[0, 0.004, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={piece.type === 'n' ? [0.85, 1.5, 1] : 1}>
         <circleGeometry args={[0.3, 20]} />
         <meshBasicMaterial color="#000000" transparent opacity={0.28} depthWrite={false} />
       </mesh>

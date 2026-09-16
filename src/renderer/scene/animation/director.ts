@@ -24,6 +24,16 @@ export interface DirectorHooks {
 
 /** How close the attacker stops to its victim before striking. */
 const DUEL_GAP = 0.52;
+
+/**
+ * Extra standoff for pieces that take up more than their own footprint.
+ *
+ * The knight's horse puts its nose about 0.7 of a square ahead of the piece's
+ * centre, and the couched lance reaches about 0.8. This stops the horse just
+ * short of whoever it is fighting while the lance still connects — and gives
+ * an attacker the same room when the knight is the one being struck.
+ */
+const DUEL_BULK: Partial<Record<PieceType, number>> = { n: 0.42 };
 const SETTLE_TIME = 0.4;
 const DEATH_TIME = 0.95;
 const FADE_TIME = 0.45;
@@ -183,7 +193,8 @@ export class CinematicDirector {
     const approachDir = new THREE.Vector3().subVectors(victimPos, start);
     if (approachDir.lengthSq() < 1e-6) approachDir.set(0, 0, 1);
     approachDir.normalize();
-    const duelPos = new THREE.Vector3().copy(victimPos).addScaledVector(approachDir, -DUEL_GAP);
+    const gap = DUEL_GAP + (DUEL_BULK[c.attackerType] ?? 0) + (DUEL_BULK[c.victimType] ?? 0);
+    const duelPos = new THREE.Vector3().copy(victimPos).addScaledVector(approachDir, -gap);
 
     const attackerYaw = headingBetween(duelPos, victimPos);
     const victimYaw = attackerYaw + Math.PI;
@@ -339,10 +350,8 @@ export class CinematicDirector {
       motion.pose = u >= 1 ? 'idle' : 'walk';
       motion.poseTime = u >= 1 ? 0 : (plan.duration * u) % 100;
 
-      if (plan.arc) {
-        motion.pose = u >= 1 ? 'idle' : 'attack'; // the tucked leap silhouette
-        motion.poseTime = u >= 1 ? 0 : u * 0.5;
-      }
+      // The arc belongs to the knight, and the knight is now a horse: a gallop
+      // carries the leap far better than the old tucked silhouette did.
     } else {
       motion.yaw = plan.endYaw;
     }
