@@ -7,6 +7,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { useGame, actions } from './useGame';
 import { PIECE_NAME, type Color, type PieceType } from '../core/types';
 import { clockNow, formatClock, isLowTime, remainingMs, type ClockState } from '../core/clock';
+import { EmberField } from './EmberField';
+
+/** Flames along the foot of the banner: position, size and offset per plume. */
+const FLAMES = [
+  { left: 8, width: 64, height: 132, delay: 0.37, duration: 1.95 },
+  { left: 22, width: 78, height: 168, delay: 0, duration: 1.6 },
+  { left: 36, width: 70, height: 186, delay: 0.52, duration: 1.42 },
+  { left: 50, width: 88, height: 206, delay: 0.14, duration: 1.78 },
+  { left: 64, width: 72, height: 180, delay: 0.63, duration: 1.5 },
+  { left: 78, width: 80, height: 162, delay: 0.26, duration: 2.05 },
+  { left: 92, width: 62, height: 128, delay: 0.44, duration: 1.7 },
+];
 
 const GLYPH: Record<Color, Record<PieceType, string>> = {
   w: { k: '♔', q: '♕', r: '♖', b: '♗', n: '♘', p: '♙' },
@@ -227,13 +239,13 @@ function PromotionDialog() {
   );
 }
 
-function ResultCard() {
+function ResultBanner() {
   const phase = useGame((s) => s.phase);
   const result = useGame((s) => s.result);
   const config = useGame((s) => s.config);
   const active = useGame((s) => s.active);
 
-  // Hold the card back until the victory cinematic has finished playing.
+  // Hold the banner back until the victory cinematic has finished playing.
   if (phase !== 'over' || !result || active) return null;
 
   const outcome =
@@ -277,13 +289,40 @@ function ResultCard() {
   };
 
   return (
-    <div className="overlay">
-      <div className="result-card">
-        <h2 className="result-title" data-outcome={outcome}>
-          {title}
-        </h2>
-        <p className="result-detail">{detail[result.kind] ?? ''}</p>
-        <div className="result-actions">
+    <div className="overlay banner-overlay" data-outcome={outcome}>
+      <EmberField tone={outcome} />
+
+      <div className="banner">
+        {/* The crossbar the banner hangs from. */}
+        <div className="banner-bar" aria-hidden />
+
+        {/* Gold edge with the cloth inset inside it — a clip-path cannot take a border. */}
+        <div className="banner-edge">
+          <div className="banner-cloth" role="status" aria-live="polite">
+            <h2 className="banner-title" data-outcome={outcome}>
+              {title}
+            </h2>
+            <p className="banner-detail">{detail[result.kind] ?? ''}</p>
+          </div>
+        </div>
+
+        <div className="banner-fire" aria-hidden>
+          {FLAMES.map((flame) => (
+            <span
+              key={flame.left}
+              className="flame"
+              style={{
+                left: `${flame.left}%`,
+                width: `${flame.width}px`,
+                height: `${flame.height}px`,
+                animationDelay: `${flame.delay}s`,
+                animationDuration: `${flame.duration}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="banner-actions">
           <button className="hud-button" onClick={() => actions.newGame()}>
             Play again
           </button>
@@ -302,7 +341,7 @@ export function Hud() {
       <TopBar />
       <SidePanel />
       <PromotionDialog />
-      <ResultCard />
+      <ResultBanner />
     </div>
   );
 }

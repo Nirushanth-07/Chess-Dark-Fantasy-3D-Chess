@@ -15,6 +15,7 @@ Built with Electron, TypeScript, React and three.js. Plays hotseat or against a 
 - **Capture duels.** The attacker walks up, strikes, and the victim's death animation is triggered on the attacker's exact hit frame — with impact sound and camera shake on the same frame.
 - **Piece-specific movement.** The knight rides a warhorse that gallops through its L-shaped leap and charges with a couched lance; the rook strides, the bishop glides, the king shuffles.
 - **Auras.** A subtle ambient glow tracks material advantage, the checked king pulses red, and the winning king raises his sword in a burst of gold.
+- **Victory banner.** The game ends on a heraldic banner that unfurls from a gold crossbar, fire burning along its hem and sparks bursting out across the board. Defeat smoulders instead of blazing; a draw stays cold.
 - **Hotseat board flip.** In Man vs Man the camera swings round to whoever is to move, so both players read the board from their own side.
 - **Optional chess clock.** Off by default. Choose bullet, blitz, rapid or classical, with Fischer increment. The clock pauses while a move animates, so a long duel never costs anyone time — and running out of time against a side that cannot mate is scored as a draw.
 - **Laddered AI.** Five difficulty rungs from *Squire* to *Sovereign*, all returning a move in under two seconds.

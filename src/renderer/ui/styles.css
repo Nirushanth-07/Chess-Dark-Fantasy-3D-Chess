@@ -434,50 +434,234 @@ button {
   to { opacity: 1; }
 }
 
-.result-card {
-  padding: 38px 52px;
-  text-align: center;
-  background: linear-gradient(180deg, rgba(25, 29, 37, 0.96), rgba(10, 12, 16, 0.98));
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8);
+/* ------------------------------------------------- end-of-game banner */
+
+.banner-overlay {
+  background: radial-gradient(ellipse at 50% 56%, rgba(78, 28, 4, 0.5), rgba(4, 5, 8, 0.88) 62%);
 }
 
-.result-title {
-  margin: 0 0 6px;
+.banner-overlay[data-outcome='loss'] {
+  background: radial-gradient(ellipse at 50% 56%, rgba(58, 12, 8, 0.44), rgba(3, 4, 6, 0.9) 62%);
+}
+
+.banner-overlay[data-outcome='draw'] {
+  background: rgba(4, 5, 8, 0.82);
+}
+
+.ember-field {
+  position: absolute;
+  inset: 0;
+  /* A canvas is a replaced element: without an explicit size it keeps its
+     intrinsic 300x150 instead of stretching to the inset. */
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.banner {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  width: min(540px, 88vw);
+}
+
+/* The crossbar, with a finial at each end. */
+.banner-bar {
+  position: relative;
+  z-index: 2;
+  width: calc(100% + 54px);
+  height: 9px;
+  border-radius: 5px;
+  background: linear-gradient(180deg, #f0d49a 0%, #c89a4c 38%, #6d4c1c 100%);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.65), 0 0 22px rgba(216, 150, 74, 0.25);
+}
+
+.banner-bar::before,
+.banner-bar::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  transform: translateY(-50%);
+  background: radial-gradient(circle at 34% 30%, #ffe6b0, #b9842f 60%, #5e4116);
+}
+
+.banner-bar::before { left: -9px; }
+.banner-bar::after { right: -9px; }
+
+/* The cloth unfurls downward from the bar. */
+.banner-edge {
+  width: 100%;
+  margin-top: -2px;
+  padding: 2px;
+  background: linear-gradient(180deg, rgba(216, 150, 74, 0.85), rgba(120, 82, 34, 0.5) 40%, rgba(60, 42, 18, 0.35));
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 38px), 0 100%);
+  transform-origin: 50% 0;
+  animation: unfurl 0.7s cubic-bezier(0.22, 0.9, 0.24, 1) both;
+}
+
+.banner-cloth {
+  padding: 42px 42px 76px;
+  text-align: center;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% calc(100% - 38px), 0 100%);
+  /* Weave first so it sits over the cloth gradient rather than under it. */
+  background:
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.022) 0 3px, transparent 3px 7px),
+    linear-gradient(180deg, rgba(44, 31, 26, 0.97), rgba(16, 13, 16, 0.985));
+}
+
+@keyframes unfurl {
+  from { transform: scaleY(0.04); opacity: 0; }
+  60% { opacity: 1; }
+  to { transform: scaleY(1); opacity: 1; }
+}
+
+.banner-title {
+  margin: 0 0 8px;
   font-family: var(--font-display);
-  font-size: 40px;
+  font-size: clamp(30px, 6vw, 46px);
   font-weight: 400;
   letter-spacing: 0.16em;
   text-transform: uppercase;
+  animation: ignite 1s ease-out 0.4s both;
 }
 
-.result-title[data-outcome='win'] {
-  color: var(--ember-bright);
-  text-shadow: 0 0 40px rgba(216, 150, 74, 0.55);
+.banner-title[data-outcome='win'] { color: var(--ember-bright); }
+.banner-title[data-outcome='loss'] { color: var(--blood); }
+.banner-title[data-outcome='draw'] { color: var(--steel-300); }
+
+@keyframes ignite {
+  from { opacity: 0; letter-spacing: 0.42em; text-shadow: none; }
+  to { opacity: 1; letter-spacing: 0.16em; text-shadow: 0 0 46px rgba(216, 150, 74, 0.6); }
 }
 
-.result-title[data-outcome='loss'] {
-  color: var(--blood);
-  text-shadow: 0 0 40px rgba(194, 69, 44, 0.45);
-}
-
-.result-title[data-outcome='draw'] {
-  color: var(--steel-300);
-}
-
-.result-detail {
-  margin: 0 0 26px;
+.banner-detail {
+  margin: 0;
   font-size: 12px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--steel-500);
+  animation: fade-in 0.8s ease 0.8s both;
 }
 
-.result-actions {
+/* Fire along the foot of the banner. Screen blending keeps the plumes additive
+   over the cloth instead of painting grey boxes on it. */
+.banner-fire {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  /* Level with the lowest point of the hem, so the plumes climb the cloth
+     rather than glowing out of the middle of it. */
+  bottom: 70px;
+  height: 0;
+  pointer-events: none;
+}
+
+.banner-fire::after {
+  content: '';
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: -6px;
+  height: 10px;
+  background: linear-gradient(90deg, transparent, rgba(255, 190, 110, 0.75), transparent);
+  filter: blur(6px);
+  mix-blend-mode: screen;
+  animation: bed-pulse 2.4s ease-in-out infinite;
+}
+
+.flame {
+  position: absolute;
+  bottom: -14px;
+  transform: translateX(-50%);
+  transform-origin: 50% 100%;
+  mix-blend-mode: screen;
+  filter: blur(6px);
+  /* A tall, narrow ellipse anchored at the base tapers to a tip; a round one
+     reads as a lamp rather than a flame. */
+  background: radial-gradient(
+    ellipse 46% 62% at 50% 100%,
+    rgba(255, 236, 190, 0.92) 0%,
+    rgba(255, 170, 70, 0.72) 30%,
+    rgba(214, 78, 22, 0.38) 56%,
+    rgba(120, 28, 8, 0.1) 74%,
+    transparent 84%
+  );
+  animation-name: flicker;
+  animation-iteration-count: infinite;
+  animation-timing-function: ease-in-out;
+}
+
+/* The white-hot core at the base of each plume. */
+.flame::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 46%;
+  height: 58%;
+  transform: translateX(-50%);
+  filter: blur(4px);
+  background: radial-gradient(
+    ellipse 52% 64% at 50% 100%,
+    rgba(255, 250, 232, 0.95) 0%,
+    rgba(255, 206, 126, 0.6) 40%,
+    transparent 74%
+  );
+}
+
+/* Defeat smoulders instead of blazing. */
+.banner-overlay[data-outcome='loss'] .flame {
+  filter: blur(12px);
+  background: radial-gradient(
+    ellipse at 50% 100%,
+    rgba(190, 90, 70, 0.5) 0%,
+    rgba(120, 36, 24, 0.35) 38%,
+    rgba(40, 30, 34, 0.25) 62%,
+    transparent 80%
+  );
+}
+
+.banner-overlay[data-outcome='loss'] .flame::after { opacity: 0.3; }
+.banner-overlay[data-outcome='loss'] .banner-fire::after { opacity: 0.4; }
+.banner-overlay[data-outcome='draw'] .banner-fire { display: none; }
+
+/* Height, width and lean all move together — a flame that only scales pulses
+   like a lamp being dimmed. */
+@keyframes flicker {
+  0%, 100% { transform: translateX(-50%) scale(1, 1) skewX(0deg); opacity: 0.8; }
+  20% { transform: translateX(-50%) scale(0.92, 1.26) skewX(3deg); opacity: 1; }
+  45% { transform: translateX(-50%) scale(1.08, 0.88) skewX(-4deg); opacity: 0.68; }
+  72% { transform: translateX(-50%) scale(0.95, 1.16) skewX(2deg); opacity: 0.94; }
+}
+
+@keyframes bed-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+
+.banner-actions {
+  position: relative;
+  z-index: 2;
   display: flex;
   gap: 10px;
   justify-content: center;
+  margin-top: 30px;
+  animation: fade-in 0.6s ease 1s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner-edge,
+  .banner-title,
+  .banner-detail,
+  .banner-actions,
+  .banner-fire::after,
+  .flame {
+    animation: none;
+  }
+  .banner-edge { transform: none; opacity: 1; }
 }
 
 /* ------------------------------------------------------------- promotion */
